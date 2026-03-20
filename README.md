@@ -4,11 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2024_Edition-orange.svg)](https://www.rust-lang.org/)
 
-**Transparent proxy that bridges your Claude Max subscription to any Anthropic API client.**
+**Drop-in replacement for `api.anthropic.com` that routes requests through the `claude` CLI on your machine.**
 
-Use Claude Opus, Sonnet, or Haiku from any tool that speaks the Anthropic Messages API — without paying per-token API costs. Just use your existing Max subscription.
+No SDK, no API key, no per-token costs. If `claude` works in your terminal, the proxy works. Any tool that speaks the Anthropic Messages API can use your Max subscription — the proxy just translates the wire format.
 
-> Inspired by [opencode-claude-max-proxy](https://github.com/rynfar/opencode-claude-max-proxy) (TypeScript/Bun). This is a standalone Rust rewrite — single binary, zero runtime dependencies, generic for any client.
+> Inspired by [opencode-claude-max-proxy](https://github.com/rynfar/opencode-claude-max-proxy) (TypeScript/Bun). Standalone Rust rewrite — single binary, zero runtime dependencies.
 
 ---
 
@@ -20,9 +20,7 @@ Your Tool ──POST /v1/messages──▶ Proxy (localhost:3456) ──▶ clau
                                   Anthropic SSE ◀──── NDJSON stdout
 ```
 
-The proxy is a **drop-in replacement** for `api.anthropic.com`. It accepts standard Anthropic Messages API requests, spawns the `claude` CLI under the hood (which authenticates via your Max subscription), and returns standard Anthropic SSE streaming events. Your tool never knows the difference.
-
-**No SDK. No API key. No ToS violation.** The proxy uses the official Claude Code CLI — the same binary you run in your terminal. It authenticates through your Max subscription exactly like a normal interactive session. The proxy is just a format adapter: Anthropic REST in, CLI stdin/stdout, Anthropic SSE out.
+The proxy accepts Anthropic Messages API requests, spawns the `claude` CLI already authenticated on your machine, and streams back standard Anthropic SSE events. Your tool never knows the difference.
 
 ## Quick Start
 
@@ -86,13 +84,11 @@ curl -X POST http://127.0.0.1:3456/v1/messages \
 
 ## Why CLI, Not SDK?
 
-Other proxies hit the Anthropic API directly using SDK clients or raw HTTP — which requires an API key and may conflict with Anthropic's Terms of Service when used to circumvent billing.
-
-This proxy takes a different approach: **it spawns the official `claude` CLI binary**. The CLI handles all authentication through your Max subscription, exactly like typing in a terminal. The proxy never touches the API directly, never uses an API key, and never bypasses any auth mechanism. It's a format translator, not an API client.
+Other proxies call the Anthropic API directly — requiring an API key. This proxy spawns the `claude` CLI binary already on your machine. No API key, no SDK, no direct API calls. Just the same CLI you already use in your terminal.
 
 ```
-SDK approach:   Tool → proxy → Anthropic API (needs API key, potential ToS issue)
-CLI approach:   Tool → proxy → claude CLI → Max subscription (same as terminal usage)
+SDK approach:   Tool → proxy → Anthropic API (needs API key)
+CLI approach:   Tool → proxy → claude CLI (already logged in)
 ```
 
 ## Compatibility
@@ -175,7 +171,7 @@ data: {"type":"message_stop"}
 
 | Header | Description |
 |--------|-------------|
-| `x-api-key` | Accepted but ignored (proxy uses CLI auth) |
+| `x-api-key` | Accepted but ignored |
 | `Authorization` | Accepted but ignored |
 | `X-Working-Dir` | Sets the CLI's working directory for the request (e.g., your project root) |
 
@@ -189,31 +185,28 @@ data: {"type":"message_stop"}
 ## FAQ
 
 **Why not just use an API key?**
-API keys cost per token. Claude Max is a flat subscription with generous limits. This proxy lets you use that subscription from any tool — same models, zero per-token costs.
+API keys cost per token. Max is flat-rate. This lets any tool use your Max subscription.
 
 **Why Rust instead of TypeScript?**
-Single binary. No `node_modules`, no `bun install`, no runtime dependencies. Download, run, done.
+Single binary. No `node_modules`, no runtime. Download, run, done.
 
 **Why CLI instead of SDK?**
-The CLI authenticates through your Max subscription — same as using Claude Code in your terminal. No API key needed, no auth bypass, no ToS gray area. The proxy is just a format adapter.
+The CLI is already logged in on your machine. No API key needed, no SDK, no direct API calls.
 
 **How do I connect my tool?**
-Just change your tool's Anthropic base URL to `http://127.0.0.1:3456`. Keep your existing API key if you want — the proxy ignores it.
-
-**Why does it need Claude Code CLI?**
-The CLI handles all authentication with your Max subscription. The proxy just spawns it — no tokens, no OAuth, no credentials to manage. If `claude login` works, the proxy works.
+Set base URL to `http://127.0.0.1:3456`. The proxy ignores any API key your tool sends.
 
 **What about rate limits?**
-Your Claude Max subscription has its own usage limits. The proxy adds no additional constraints.
+Same as your Max subscription. The proxy adds nothing on top.
 
 **Is my data sent somewhere?**
-No. Everything runs locally. Requests go from your tool → proxy → `claude` CLI → Anthropic. Same path as using Claude Code directly.
+No. Everything is local. Tool → proxy → `claude` CLI → Anthropic. Same path as using the CLI directly.
 
 **Can I run multiple proxies?**
-Yes. Use different ports: `PORT=3457 cc-max-proxy`.
+Yes. Different ports: `PORT=3457 cc-max-proxy`.
 
-**Does this work with Claude Teams/Enterprise?**
-If `claude login` authenticates your account and `claude -p "hello"` works, the proxy works. It uses whatever account the CLI is signed into.
+**Does this work with Teams/Enterprise?**
+If `claude -p "hello"` works, the proxy works. It uses whatever account the CLI is signed into.
 
 ## Troubleshooting
 
@@ -229,9 +222,7 @@ If `claude login` authenticates your account and `claude -p "hello"` works, the 
 
 ## Disclaimer
 
-This is an unofficial project that uses Anthropic's publicly available Claude Code CLI. It is **not** affiliated with, endorsed by, or supported by Anthropic.
-
-**Use at your own risk.** Review Anthropic's [Terms of Service](https://www.anthropic.com/terms) and [Authorized Usage Policy](https://www.anthropic.com/usage-policy). This project calls the `claude` CLI using your own authenticated account — no API keys are intercepted, no authentication is bypassed, no proprietary systems are reverse-engineered.
+Unofficial project. Not affiliated with or endorsed by Anthropic. Uses the publicly available Claude Code CLI. Use at your own risk — review Anthropic's [Terms of Service](https://www.anthropic.com/terms) and [Usage Policy](https://www.anthropic.com/usage-policy).
 
 ## Credits
 
