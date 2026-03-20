@@ -12,9 +12,17 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let debug = std::env::args().any(|a| a == "--debug");
+
+    let default_directive = if debug {
+        "cc_max_proxy_rs=debug"
+    } else {
+        "cc_max_proxy_rs=info"
+    };
+
     tracing_subscriber::fmt()
         .with_env_filter(
-            EnvFilter::from_default_env().add_directive("cc_max_proxy_rs=info".parse()?),
+            EnvFilter::from_default_env().add_directive(default_directive.parse()?),
         )
         .init();
 
