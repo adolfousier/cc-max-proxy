@@ -113,6 +113,7 @@ pub async fn spawn_stream(
         .arg("--no-session-persistence")
         .arg("--model")
         .arg(model)
+        .current_dir(std::env::temp_dir())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
