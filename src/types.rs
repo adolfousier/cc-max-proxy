@@ -150,7 +150,7 @@ pub struct SseContentBlockDelta {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SseDelta {
     TextDelta { text: String },
-    ThinkingDelta { thinking: String },
+    ReasoningDelta { text: String },
 }
 
 /// SSE `content_block_stop` event payload.

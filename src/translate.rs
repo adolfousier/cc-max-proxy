@@ -19,6 +19,7 @@ pub fn translate_cli_message(msg: &CliMessage, state: &mut TranslateState) -> Ve
     match msg {
         CliMessage::System { model } => {
             if let Some(m) = model {
+                tracing::debug!("CLI system: model={}", m);
                 state.model = m.clone();
             }
         }
@@ -61,6 +62,7 @@ pub fn translate_cli_message(msg: &CliMessage, state: &mut TranslateState) -> Ve
 
                 match block {
                     ContentBlock::Text { text } => {
+                        tracing::debug!("Block {}: text ({} chars)", index, text.len());
                         events.push(event(
                             "content_block_start",
                             &SseContentBlockStart {
@@ -93,6 +95,7 @@ pub fn translate_cli_message(msg: &CliMessage, state: &mut TranslateState) -> Ve
                     }
 
                     ContentBlock::ToolUse { id, name, input } => {
+                        tracing::debug!("Block {}: tool_use name={} id={}", index, name, id);
                         events.push(event(
                             "content_block_start",
                             &SseContentBlockStart {
@@ -118,6 +121,7 @@ pub fn translate_cli_message(msg: &CliMessage, state: &mut TranslateState) -> Ve
                     }
 
                     ContentBlock::Thinking { thinking } => {
+                        tracing::debug!("Block {}: thinking ({} chars)", index, thinking.len());
                         events.push(event(
                             "content_block_start",
                             &SseContentBlockStart {
@@ -134,8 +138,8 @@ pub fn translate_cli_message(msg: &CliMessage, state: &mut TranslateState) -> Ve
                             &SseContentBlockDelta {
                                 r#type: "content_block_delta",
                                 index,
-                                delta: SseDelta::ThinkingDelta {
-                                    thinking: thinking.clone(),
+                                delta: SseDelta::ReasoningDelta {
+                                    text: thinking.clone(),
                                 },
                             },
                         ));

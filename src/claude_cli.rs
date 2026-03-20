@@ -166,6 +166,7 @@ pub async fn spawn_stream(
 
             match serde_json::from_str::<CliMessage>(&line) {
                 Ok(msg) => {
+                    tracing::debug!("CLI → {:?}", std::mem::discriminant(&msg));
                     if tx.send(Ok(msg)).await.is_err() {
                         break; // receiver dropped
                     }
