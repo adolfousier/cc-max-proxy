@@ -1,5 +1,5 @@
 use std::process::Stdio;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::mpsc;
 
@@ -113,11 +113,21 @@ pub async fn spawn_stream(
         .arg("--no-session-persistence")
         .arg("--model")
         .arg(model)
-        .arg("--")
-        .arg(&prompt)
+        .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
+
+    // Write prompt via stdin to avoid leaking it in `ps aux`
+    let mut stdin = child
+        .stdin
+        .take()
+        .ok_or_else(|| ProxyError::CliError("failed to capture stdin".to_string()))?;
+    let prompt_bytes = prompt.into_bytes();
+    tokio::spawn(async move {
+        let _ = stdin.write_all(&prompt_bytes).await;
+        let _ = stdin.shutdown().await;
+    });
 
     let stdout = child
         .stdout
