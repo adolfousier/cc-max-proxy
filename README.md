@@ -1,8 +1,8 @@
-# cc-max-proxy-rs
+# cc-max-proxy
 
+[![Crates.io](https://img.shields.io/crates/v/cc-max-proxy.svg)](https://crates.io/crates/cc-max-proxy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-2024_Edition-orange.svg)](https://www.rust-lang.org/)
-[![Claude Code](https://img.shields.io/badge/Claude_Code-Compatible-blueviolet.svg)](https://code.claude.com)
 
 **Transparent proxy that bridges your Claude Max subscription to any Anthropic API client.**
 
@@ -22,6 +22,8 @@ Your Tool ──POST /v1/messages──▶ Proxy (localhost:3456) ──▶ clau
 
 The proxy is a **drop-in replacement** for `api.anthropic.com`. It accepts standard Anthropic Messages API requests, spawns the `claude` CLI under the hood (which authenticates via your Max subscription), and returns standard Anthropic SSE streaming events. Your tool never knows the difference.
 
+**No SDK. No API key. No ToS violation.** The proxy uses the official Claude Code CLI — the same binary you run in your terminal. It authenticates through your Max subscription exactly like a normal interactive session. The proxy is just a format adapter: Anthropic REST in, CLI stdin/stdout, Anthropic SSE out.
+
 ## Quick Start
 
 ### Prerequisites
@@ -36,17 +38,24 @@ The proxy is a **drop-in replacement** for `api.anthropic.com`. It accepts stand
   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
   ```
 
-### Install & Run
+### Install from crates.io
+
+```bash
+cargo install cc-max-proxy
+cc-max-proxy
+```
+
+### Or build from source
 
 ```bash
 git clone https://github.com/adolfousier/cc-max-proxy-rs
 cd cc-max-proxy-rs
 cargo build --release
-./target/release/cc-max-proxy-rs
+./target/release/cc-max-proxy
 ```
 
 ```
-cc-max-proxy-rs listening on http://127.0.0.1:3456
+cc-max-proxy listening on http://127.0.0.1:3456
 Set ANTHROPIC_BASE_URL=http://127.0.0.1:3456 in your tool
 ```
 
@@ -75,6 +84,17 @@ curl -X POST http://127.0.0.1:3456/v1/messages \
   }'
 ```
 
+## Why CLI, Not SDK?
+
+Other proxies hit the Anthropic API directly using SDK clients or raw HTTP — which requires an API key and may conflict with Anthropic's Terms of Service when used to circumvent billing.
+
+This proxy takes a different approach: **it spawns the official `claude` CLI binary**. The CLI handles all authentication through your Max subscription, exactly like typing in a terminal. The proxy never touches the API directly, never uses an API key, and never bypasses any auth mechanism. It's a format translator, not an API client.
+
+```
+SDK approach:   Tool → proxy → Anthropic API (needs API key, potential ToS issue)
+CLI approach:   Tool → proxy → claude CLI → Max subscription (same as terminal usage)
+```
+
 ## Compatibility
 
 Works with any tool that speaks the Anthropic Messages API:
@@ -97,15 +117,23 @@ All configuration via environment variables:
 | `HOST` | `127.0.0.1` | Listen address |
 | `CLAUDE_PATH` | auto-detect | Path to `claude` binary |
 | `MAX_CONCURRENT` | `1` | Max parallel CLI spawns |
-| `RUST_LOG` | `cc_max_proxy_rs=info` | Log level |
+
+Use `--debug` flag for verbose logging:
+
+```bash
+cc-max-proxy --debug
+```
 
 ## Features
 
+- **CLI-based** — uses the official `claude` binary, no API key needed, no ToS concerns
 - **Single binary** — no Node.js, no Bun, no runtime dependencies
 - **Transparent** — standard Anthropic Messages API, streaming SSE
 - **Zero config on client** — just set base URL, accepts any API key
 - **Model mapping** — `*opus*` → opus, `*haiku*` → haiku, default → sonnet
 - **Streaming + non-streaming** — both `stream: true` and `stream: false` supported
+- **Secure** — prompts piped via stdin (not visible in `ps aux`)
+- **Working directory aware** — `X-Working-Dir` header sets the CLI's cwd for project-scoped sessions
 - **Request serialization** — configurable semaphore prevents CLI spawn conflicts
 - **Health endpoint** — `GET /` returns proxy status
 
@@ -113,12 +141,13 @@ All configuration via environment variables:
 
 ```
 src/
-├── main.rs          # Entry point, env config, server startup
+├── main.rs          # Entry point, CLI args (--debug), server startup
 ├── server.rs        # Axum router, /v1/messages handler, SSE streaming
-├── claude_cli.rs    # Spawn claude CLI, read NDJSON stream
+├── claude_cli.rs    # Spawn claude CLI, read NDJSON stream, env isolation
 ├── translate.rs     # CLI NDJSON → Anthropic SSE event translation
 ├── types.rs         # Request/response/CLI message types
-└── error.rs         # Typed errors (thiserror)
+├── error.rs         # Typed errors (thiserror)
+└── tests/           # Unit tests (types, translation, CLI logic)
 ```
 
 The proxy translates between two formats:
@@ -142,6 +171,14 @@ event: message_stop
 data: {"type":"message_stop"}
 ```
 
+## Headers
+
+| Header | Description |
+|--------|-------------|
+| `x-api-key` | Accepted but ignored (proxy uses CLI auth) |
+| `Authorization` | Accepted but ignored |
+| `X-Working-Dir` | Sets the CLI's working directory for the request (e.g., your project root) |
+
 ## Limitations
 
 - **Concurrency**: Claude CLI may not handle parallel spawns well — default `MAX_CONCURRENT=1` serializes requests
@@ -157,8 +194,11 @@ API keys cost per token. Claude Max is a flat subscription with generous limits.
 **Why Rust instead of TypeScript?**
 Single binary. No `node_modules`, no `bun install`, no runtime dependencies. Download, run, done.
 
+**Why CLI instead of SDK?**
+The CLI authenticates through your Max subscription — same as using Claude Code in your terminal. No API key needed, no auth bypass, no ToS gray area. The proxy is just a format adapter.
+
 **How do I connect my tool?**
-Just change your tool's Anthropic base URL to `http://127.0.0.1:3456`. Your existing API key stays as-is — it still works for things like model listing (`/v1/models`), while the proxy handles the actual inference through the CLI in the background.
+Just change your tool's Anthropic base URL to `http://127.0.0.1:3456`. Keep your existing API key if you want — the proxy ignores it.
 
 **Why does it need Claude Code CLI?**
 The CLI handles all authentication with your Max subscription. The proxy just spawns it — no tokens, no OAuth, no credentials to manage. If `claude login` works, the proxy works.
@@ -170,7 +210,7 @@ Your Claude Max subscription has its own usage limits. The proxy adds no additio
 No. Everything runs locally. Requests go from your tool → proxy → `claude` CLI → Anthropic. Same path as using Claude Code directly.
 
 **Can I run multiple proxies?**
-Yes. Use different ports: `PORT=3457 cargo run`.
+Yes. Use different ports: `PORT=3457 cc-max-proxy`.
 
 **Does this work with Claude Teams/Enterprise?**
 If `claude login` authenticates your account and `claude -p "hello"` works, the proxy works. It uses whatever account the CLI is signed into.
@@ -181,10 +221,11 @@ If `claude login` authenticates your account and `claude -p "hello"` works, the 
 |---------|----------|
 | "claude CLI not found" | Install: `npm install -g @anthropic-ai/claude-code` |
 | "Authentication failed" in CLI | Run `claude login` to re-authenticate |
-| "Connection refused" on port 3456 | Ensure proxy is running: `cargo run` |
-| Port already in use | `kill $(lsof -ti :3456)` or use `PORT=4567 cargo run` |
-| No response from proxy | Check `RUST_LOG=debug cargo run` for CLI spawn errors |
+| "Connection refused" on port 3456 | Ensure proxy is running: `cc-max-proxy` |
+| Port already in use | `kill $(lsof -ti :3456)` or use `PORT=4567 cc-max-proxy` |
+| No response from proxy | Run `cc-max-proxy --debug` for verbose CLI spawn logs |
 | Slow first response | Normal — CLI process spawn takes ~1-2s |
+| "Nested session" errors | Proxy strips `CLAUDECODE` env var automatically since v0.1.0 |
 
 ## Disclaimer
 
