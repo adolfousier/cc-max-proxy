@@ -1,0 +1,18 @@
+[package]
+name = "cc-max-proxy-rs"
+version = "0.1.0"
+edition = "2024"
+description = "Transparent proxy that bridges Claude Max subscriptions to any Anthropic API client"
+license = "MIT"
+
+[dependencies]
+axum = "0.8.8"
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6.8", features = ["cors"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2.0.18"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+uuid = { version = "1.22.0", features = ["v4"] }
+futures = "0.3"
