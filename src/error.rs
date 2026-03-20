@@ -1,6 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+/// Proxy error types, returned as Anthropic-format error JSON.
 #[derive(Debug, thiserror::Error)]
 pub enum ProxyError {
     #[error("failed to spawn claude CLI: {0}")]

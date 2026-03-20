@@ -1,9 +1,14 @@
 [package]
-name = "cc-max-proxy-rs"
+name = "cc-max-proxy"
 version = "0.1.0"
 edition = "2024"
 description = "Transparent proxy that bridges Claude Max subscriptions to any Anthropic API client"
 license = "MIT"
+repository = "https://github.com/adolfousier/cc-max-proxy-rs"
+homepage = "https://github.com/adolfousier/cc-max-proxy-rs"
+keywords = ["claude", "proxy", "anthropic", "cli"]
+categories = ["command-line-utilities", "web-programming"]
+readme = "README.md"
 
 [dependencies]
 axum = "0.8.8"

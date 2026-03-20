@@ -14,11 +14,13 @@ use crate::error::ProxyError;
 use crate::translate::{TranslateState, translate_cli_message};
 use crate::types::{CliMessage, ContentBlock, MessagesRequest, MessagesResponse, SseUsage};
 
+/// Shared application state holding the CLI path and concurrency limiter.
 pub struct AppState {
     pub claude_path: String,
     pub semaphore: Semaphore,
 }
 
+/// Build the Axum router with `/v1/messages` and health endpoints.
 pub fn create_router(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/v1/messages", post(handle_messages))

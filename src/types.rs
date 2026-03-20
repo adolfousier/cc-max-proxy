@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 // ── Incoming: Anthropic Messages API request ──
 
+/// Anthropic Messages API request body.
 #[derive(Debug, Deserialize)]
 pub struct MessagesRequest {
     pub model: String,
@@ -16,12 +17,14 @@ fn default_stream() -> bool {
     true
 }
 
+/// A single message in the conversation.
 #[derive(Debug, Deserialize)]
 pub struct Message {
     pub role: String,
     pub content: MessageContent,
 }
 
+/// Message content — either a plain string or an array of content blocks.
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum MessageContent {
@@ -29,6 +32,7 @@ pub enum MessageContent {
     Blocks(Vec<ContentBlock>),
 }
 
+/// A content block within a message (text, image, tool_use, tool_result).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ContentBlock {
@@ -51,6 +55,7 @@ pub enum ContentBlock {
 
 // ── CLI NDJSON output types ──
 
+/// A parsed NDJSON message from the claude CLI stdout.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum CliMessage {
@@ -67,6 +72,7 @@ pub enum CliMessage {
     },
 }
 
+/// The message payload inside a CLI `assistant` event.
 #[derive(Debug, Deserialize)]
 pub struct CliAssistantMessage {
     pub id: Option<String>,
@@ -75,6 +81,7 @@ pub struct CliAssistantMessage {
     pub usage: Option<CliUsage>,
 }
 
+/// Token usage counters from the CLI.
 #[derive(Debug, Clone, Deserialize)]
 pub struct CliUsage {
     #[serde(default)]
@@ -89,12 +96,14 @@ pub struct CliUsage {
 
 // ── Outgoing: Anthropic SSE events ──
 
+/// SSE `message_start` event payload.
 #[derive(Debug, Serialize)]
 pub struct SseMessageStart {
     pub r#type: &'static str,
     pub message: SseMessageMeta,
 }
 
+/// Metadata for the message inside `message_start`.
 #[derive(Debug, Serialize)]
 pub struct SseMessageMeta {
     pub id: String,
@@ -106,6 +115,7 @@ pub struct SseMessageMeta {
     pub usage: SseUsage,
 }
 
+/// Token usage for SSE events.
 #[derive(Debug, Clone, Serialize)]
 pub struct SseUsage {
     pub input_tokens: u32,
@@ -116,6 +126,7 @@ pub struct SseUsage {
     pub cache_creation_input_tokens: Option<u32>,
 }
 
+/// SSE `content_block_start` event payload.
 #[derive(Debug, Serialize)]
 pub struct SseContentBlockStart {
     pub r#type: &'static str,
@@ -123,6 +134,7 @@ pub struct SseContentBlockStart {
     pub content_block: ContentBlock,
 }
 
+/// SSE `content_block_delta` event payload.
 #[derive(Debug, Serialize)]
 pub struct SseContentBlockDelta {
     pub r#type: &'static str,
@@ -130,18 +142,21 @@ pub struct SseContentBlockDelta {
     pub delta: SseDelta,
 }
 
+/// Delta payload for content block updates.
 #[derive(Debug, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SseDelta {
     TextDelta { text: String },
 }
 
+/// SSE `content_block_stop` event payload.
 #[derive(Debug, Serialize)]
 pub struct SseContentBlockStop {
     pub r#type: &'static str,
     pub index: usize,
 }
 
+/// SSE `message_delta` event payload.
 #[derive(Debug, Serialize)]
 pub struct SseMessageDelta {
     pub r#type: &'static str,
@@ -149,12 +164,14 @@ pub struct SseMessageDelta {
     pub usage: SseUsage,
 }
 
+/// Inner delta fields for `message_delta`.
 #[derive(Debug, Serialize)]
 pub struct SseMessageDeltaInner {
     pub stop_reason: String,
     pub stop_sequence: Option<String>,
 }
 
+/// SSE `message_stop` event payload.
 #[derive(Debug, Serialize)]
 pub struct SseMessageStop {
     pub r#type: &'static str,
@@ -162,6 +179,7 @@ pub struct SseMessageStop {
 
 // ── Non-streaming response ──
 
+/// Complete non-streaming response matching the Anthropic Messages API format.
 #[derive(Debug, Serialize)]
 pub struct MessagesResponse {
     pub id: String,

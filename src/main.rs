@@ -15,9 +15,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let debug = std::env::args().any(|a| a == "--debug");
 
     let default_directive = if debug {
-        "cc_max_proxy_rs=debug"
+        "cc_max_proxy=debug"
     } else {
-        "cc_max_proxy_rs=info"
+        "cc_max_proxy=info"
     };
 
     tracing_subscriber::fmt()
