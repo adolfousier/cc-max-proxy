@@ -21,9 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     tracing_subscriber::fmt()
-        .with_env_filter(
-            EnvFilter::from_default_env().add_directive(default_directive.parse()?),
-        )
+        .with_env_filter(EnvFilter::from_default_env().add_directive(default_directive.parse()?))
         .init();
 
     let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());

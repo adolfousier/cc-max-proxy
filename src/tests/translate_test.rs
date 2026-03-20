@@ -1,4 +1,4 @@
-use crate::translate::{translate_cli_message, TranslateState};
+use crate::translate::{TranslateState, translate_cli_message};
 use crate::types::{CliAssistantMessage, CliMessage, CliUsage, ContentBlock};
 
 fn make_state() -> TranslateState {

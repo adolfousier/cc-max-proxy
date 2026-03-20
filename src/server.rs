@@ -63,12 +63,8 @@ async fn handle_messages(
         .await
         .map_err(|e| ProxyError::CliError(format!("semaphore closed: {e}")))?;
 
-    let rx = crate::claude_cli::spawn_stream(
-        &state.claude_path,
-        &request,
-        working_dir.as_deref(),
-    )
-    .await?;
+    let rx = crate::claude_cli::spawn_stream(&state.claude_path, &request, working_dir.as_deref())
+        .await?;
 
     let model = request.model.clone();
     if request.stream {

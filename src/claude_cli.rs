@@ -105,9 +105,7 @@ pub async fn spawn_stream(
     let cwd = working_dir
         .map(std::path::PathBuf::from)
         .filter(|p| p.is_dir())
-        .unwrap_or_else(|| {
-            dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/"))
-        });
+        .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| std::path::PathBuf::from("/")));
 
     tracing::info!(
         "Spawning claude CLI: model={}, prompt_len={}, cwd={}",
