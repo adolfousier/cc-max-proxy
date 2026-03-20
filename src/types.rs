@@ -51,6 +51,9 @@ pub enum ContentBlock {
         tool_use_id: String,
         content: String,
     },
+    Thinking {
+        thinking: String,
+    },
 }
 
 // ── CLI NDJSON output types ──
@@ -147,6 +150,7 @@ pub struct SseContentBlockDelta {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SseDelta {
     TextDelta { text: String },
+    ThinkingDelta { thinking: String },
 }
 
 /// SSE `content_block_stop` event payload.

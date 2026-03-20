@@ -121,6 +121,7 @@ pub async fn spawn_stream(
         .arg("--output-format")
         .arg("stream-json")
         .arg("--verbose")
+        .arg("--include-partial-messages")
         .arg("--no-session-persistence")
         .arg("--dangerously-skip-permissions")
         .arg("--permission-mode")

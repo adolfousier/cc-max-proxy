@@ -117,6 +117,40 @@ pub fn translate_cli_message(msg: &CliMessage, state: &mut TranslateState) -> Ve
                         state.block_index += 1;
                     }
 
+                    ContentBlock::Thinking { thinking } => {
+                        events.push(event(
+                            "content_block_start",
+                            &SseContentBlockStart {
+                                r#type: "content_block_start",
+                                index,
+                                content_block: ContentBlock::Thinking {
+                                    thinking: String::new(),
+                                },
+                            },
+                        ));
+
+                        events.push(event(
+                            "content_block_delta",
+                            &SseContentBlockDelta {
+                                r#type: "content_block_delta",
+                                index,
+                                delta: SseDelta::ThinkingDelta {
+                                    thinking: thinking.clone(),
+                                },
+                            },
+                        ));
+
+                        events.push(event(
+                            "content_block_stop",
+                            &SseContentBlockStop {
+                                r#type: "content_block_stop",
+                                index,
+                            },
+                        ));
+
+                        state.block_index += 1;
+                    }
+
                     _ => {}
                 }
             }
