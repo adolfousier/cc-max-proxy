@@ -92,17 +92,26 @@ pub(crate) fn build_prompt(request: &MessagesRequest) -> String {
 }
 
 /// Spawn the claude CLI and stream NDJSON messages back via a channel.
+///
+/// `working_dir` sets the CLI's cwd (client's project dir). Falls back to temp dir.
 pub async fn spawn_stream(
     claude_path: &str,
     request: &MessagesRequest,
+    working_dir: Option<&str>,
 ) -> Result<mpsc::Receiver<Result<CliMessage, ProxyError>>, ProxyError> {
     let prompt = build_prompt(request);
     let model = map_model(&request.model);
 
+    let cwd = working_dir
+        .map(std::path::PathBuf::from)
+        .filter(|p| p.is_dir())
+        .unwrap_or_else(std::env::temp_dir);
+
     tracing::info!(
-        "Spawning claude CLI: model={}, prompt_len={}",
+        "Spawning claude CLI: model={}, prompt_len={}, cwd={}",
         model,
-        prompt.len()
+        prompt.len(),
+        cwd.display()
     );
 
     let mut child = Command::new(claude_path)
@@ -111,9 +120,10 @@ pub async fn spawn_stream(
         .arg("stream-json")
         .arg("--verbose")
         .arg("--no-session-persistence")
+        .arg("--dangerously-skip-permissions")
         .arg("--model")
         .arg(model)
-        .current_dir(std::env::temp_dir())
+        .current_dir(&cwd)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

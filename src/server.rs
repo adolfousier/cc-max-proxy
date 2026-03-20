@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::extract::State;
+use axum::http::HeaderMap;
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -40,13 +41,20 @@ async fn handle_health() -> impl IntoResponse {
 
 async fn handle_messages(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Json(request): Json<MessagesRequest>,
 ) -> Result<Response, ProxyError> {
+    let working_dir = headers
+        .get("x-working-dir")
+        .and_then(|v| v.to_str().ok())
+        .map(String::from);
+
     tracing::info!(
-        "POST /v1/messages — model={}, stream={}, messages={}",
+        "POST /v1/messages — model={}, stream={}, messages={}, cwd={:?}",
         request.model,
         request.stream,
-        request.messages.len()
+        request.messages.len(),
+        working_dir
     );
 
     let _permit = state
@@ -55,7 +63,12 @@ async fn handle_messages(
         .await
         .map_err(|e| ProxyError::CliError(format!("semaphore closed: {e}")))?;
 
-    let rx = crate::claude_cli::spawn_stream(&state.claude_path, &request).await?;
+    let rx = crate::claude_cli::spawn_stream(
+        &state.claude_path,
+        &request,
+        working_dir.as_deref(),
+    )
+    .await?;
 
     let model = request.model.clone();
     if request.stream {
