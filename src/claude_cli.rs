@@ -79,12 +79,30 @@ pub(crate) fn build_prompt(request: &MessagesRequest) -> String {
             MessageContent::Blocks(blocks) => blocks
                 .iter()
                 .filter_map(|b| match b {
-                    crate::types::ContentBlock::Text { text } => Some(text.as_str()),
+                    crate::types::ContentBlock::Text { text } => Some(text.clone()),
+                    crate::types::ContentBlock::ToolResult {
+                        tool_use_id,
+                        content,
+                    } => Some(format!("[tool_result for {}]: {}", tool_use_id, content)),
+                    crate::types::ContentBlock::ToolUse { id, name, input } => {
+                        Some(format!("[tool_use {} ({}): {}]", name, id, input))
+                    }
+                    crate::types::ContentBlock::Thinking { thinking } => {
+                        if thinking.is_empty() {
+                            None
+                        } else {
+                            Some(format!("<thinking>{}</thinking>", thinking))
+                        }
+                    }
                     _ => None,
                 })
                 .collect::<Vec<_>>()
-                .join(""),
+                .join("\n"),
         };
+        // Skip messages that would produce empty content
+        if content.trim().is_empty() {
+            continue;
+        }
         parts.push(format!("{}: {}", role, content));
     }
 

@@ -68,6 +68,11 @@ pub enum CliMessage {
     Assistant {
         message: CliAssistantMessage,
     },
+    /// Real-time SSE event from the CLI — contains a complete Anthropic SSE event
+    /// that can be forwarded directly to the client.
+    StreamEvent {
+        event: serde_json::Value,
+    },
     RateLimitEvent {},
     Result {
         stop_reason: Option<String>,
